@@ -4,13 +4,13 @@ import {Text, View, StyleSheet, ActivityIndicator, Alert, Button, Image} from 'r
 import { useDispatch, useSelector } from 'react-redux';
 import { useEffect, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
-import {getUserDataThunk} from '../store/userReducer2';
+import {getUserDataThunk, resetStatus} from '../store/userReducer2';
 import StyleButton from '../components/StyleButton';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LoadingScreen = () => {
     const navigation = useNavigation();
-    const {username, loading, error} = useSelector((state) => state.user);
+    const {username, status, error} = useSelector((state) => state.user);
     const dispatch = useDispatch();
 
     const deleteStorage = async() => {
@@ -30,12 +30,24 @@ const LoadingScreen = () => {
             .unwrap()
             .then(() => {
                 navigation.navigate("MainApp");
+                dispatch(resetStatus())
             })
         }
         else{
             navigation.navigate('SignUp')
         }
     };
+
+    const loadingDisplay = () => {
+        switch (status){
+            case "loading":
+                return <ActivityIndicator size = 'large' color = "red"/>
+            case "failed": 
+                return  <StyleButton title='Load Failed, Retry?' onPress={getUserData}/>
+            default:
+                return <></>
+        }
+    }
 
     useEffect(() => {
         getUserData()
@@ -44,10 +56,7 @@ const LoadingScreen = () => {
     return (
         <View style = {style.viewStyle}>
             <Image source = {require('../../assets/media/logolfinal2.png')} style = {style.imageStyle} resizeMode="cover" ></Image>
-        {
-            loading ? <ActivityIndicator size = 'large' color = "red"/> :
-            <StyleButton title='Load Failed, Retry?' onPress={getUserData}/>
-        }
+            {loadingDisplay()}
         <Button title='delete storage' onPress={deleteStorage}/>
         </View>
     )

@@ -10,7 +10,7 @@ const ToneRecap = ({ character, tone, percent, pinyin, attempts, trad }) => {
         }
             <View >
                 <Text style = {[style.tonePercent, {fontWeight: 'bold', fontSize: 25 }]}>{pinyin}</Text>
-                <Text style = {style.tonePercent}>Percent Accuracy: {percent * 100}%</Text>
+                <Text style = {style.tonePercent}>Accuracy: {Math.round(percent * 100)}%</Text>
                 <Text style = {style.tonePercent}>Attempts: {attempts}</Text>
             </View>
         </View>
@@ -24,7 +24,7 @@ const ToneRecap = ({ character, tone, percent, pinyin, attempts, trad }) => {
 const style = StyleSheet.create ({
     container: {
         flexDirection: 'row',  
-        borderWidth: 2,
+        borderWidth: 3,
         borderColor: 'red',
         width: "100%",
         height: 90, 

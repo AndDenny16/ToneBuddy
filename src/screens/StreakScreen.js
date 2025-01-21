@@ -5,13 +5,14 @@ import Header from '../components/Header';
 import ToneRecap from '../components/ToneRecap';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { TextInput } from 'react-native-gesture-handler';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import diacriticless from 'diacriticless'
 
 const StreakScreen = () => {
 
   //Array that contains our Accuracies
-  const {accuracyArray: accuracies, username} = useSelector((state) => state.user);
+  const {accuracyArray: accuracies} = useSelector((state) => state.user);
+  
   const [open, setOpen] = useState(false);
   const [value, setValue ] = useState("Any");
   const [items, setItems] = useState([
@@ -44,9 +45,6 @@ const StreakScreen = () => {
     <SafeAreaProvider>
     <SafeAreaView style = {styles.container}> 
       <Header headerText={"Tone Buddy"}/>
-      <View style = {{marginVertical: 5}}> 
-          <Text style = {styles.cText}>Character Stats</Text>
-      </View>
       <View style = {styles.inputsContainer}>
         <View style = {styles.dropdownContainer}>
               <DropDownPicker 
@@ -107,15 +105,16 @@ dropdownContainer: {
 },
 flatList: {
   marginTop: 15,
-  marginBottom: 190
+  marginBottom: 150
 },
 textInput: {
   backgroundColor: 'white',
   borderWidth: 2,
-  borderRadius:2,
+  borderRadius:8,
   width: 170,
   height: 50,
   marginTop: 10,
+  paddingLeft: 8
 },
 inputsContainer:{
   flexDirection: 'row',

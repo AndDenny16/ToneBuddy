@@ -1,5 +1,5 @@
 import React, {useEffect, useState, useMemo, useRef} from "react";
-import { StyleSheet, View, Text, TouchableOpacity, Dimensions } from "react-native";
+import { StyleSheet, View, Text, TouchableOpacity, Dimensions, ActivityIndicator } from "react-native";
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import { useNavigation } from '@react-navigation/native';
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -7,25 +7,29 @@ import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withDelay, withSpr
 import { useSelector, useDispatch } from "react-redux";
 import diacriticless from "diacriticless";
 import { Audio } from "expo-av";
-import { updateAccuracy, updateUserThunk, updateError, updateStreak, updateUserLSThunk, getToneThunk } from "../store/userReducer2";
-import { encodeAudio } from "./AudioRecorder";
+import { incorrect, correct, updateUserThunk, updateError, updateUserLSThunk } from "../store/userReducer2";
+import { getToneThunk, resetToneStatus } from "../store/toneReducer";
+import { encodeAudio,recordingSettings, deleteURI  } from "./AudioRecorder";
 
 
 
 const VocabCard = ({ tone, pinyin }) => {
     //STATE VARIABLES FOR SWIPING/CORRECT/ATTEMPTED
-    const [isCorrect, setIsCorrect] = useState(false);
     const [attempted, setAttempted] = useState(false);
     const [isSwipable, setSwipable] = useState(false);
+    const [localError, setlocalError] = useState(null);
 
     //STATE VARIABLES FOR RECORDING
-    const [recording, setRecording] = useState(false);
+    const [recording, setRecording] = useState(null);
     const [audioUri, setAudioUri] = useState(null);
     const soundRef = useRef(null);
 
     //REDUX STATE
-    const {accuracyArray: words, updated, username, error, currentStreak, longestStreak, currTone, loading} = useSelector((state) => state.user);
+    const {accuracyArray: words, updated, username, longestStreak, status} = useSelector((state) => state.user);
+    const {currTone, currScore, toneStatus } = useSelector((state) => state.tone);
     const dispatch = useDispatch();
+
+    console.log("STATUS", status)
 
     //CURRENT VOCAB CARD WORD
     const [currentWord, setCurrentWord] = useState(words[Math.floor(Math.random() * words.length)]);
@@ -36,18 +40,19 @@ const VocabCard = ({ tone, pinyin }) => {
 
     //NAVIGATION
     const navigation = useNavigation(); 
+    console.log("cjsdklfjal", currScore)
     
     //Error Notification Function
     const timeoutRef = useRef(null);
     const displayError = (message) => {
         //console.log("updating")
-        dispatch(updateError(message))
+        setlocalError(message)
         if (timeoutRef.current){
             clearTimeout(timeoutRef.current)
         }
         timeoutRef.current = setTimeout(()=> {
             //console.log('here')
-            dispatch(updateError(null))
+            setlocalError(null)
             timeoutRef.current = null;
         },3000)
 
@@ -56,15 +61,18 @@ const VocabCard = ({ tone, pinyin }) => {
     //REPLAY THE AUDIO BACK TO THE USER
     const playAudio = async() => {
         try{
+            await Audio.setAudioModeAsync({
+                allowsRecordingIOS: false,
+                playsInSilentModeIOS: true
+              });
             if (soundRef.current){
                 await soundRef.current.replayAsync();
                 return
             }
-            const { sound } = await Audio.Sound.createAsync(
-                { uri: audioUri },
-            );
-            await sound.playAsync();
-            soundRef.current = sound;
+            const { sound } = await Audio.Sound.createAsync({ uri: audioUri });
+            soundRef.current = sound; 
+            //await soundRef.current.setVolumeAsync(1.0);
+            await soundRef.current.replayAsync();
         }catch(error){
             console.log(error);
             displayError("Issue Playing Audio, Try Again")
@@ -74,37 +82,20 @@ const VocabCard = ({ tone, pinyin }) => {
     //START RECORDING
     const startRecording = async() =>{
         try{
+            if (attempted){
+                return
+            }
             const { status } = await Audio.getPermissionsAsync();
             if (status == 'granted'){
                 await Audio.setAudioModeAsync({
                     playsInSilentModeIOS: true,
-                    allowsRecordingIOS: true,                       
+                    allowsRecordingIOS: true,
+                    staysActiveInBackground: true                       
                 });
-                const { recording } = await Audio.Recording.createAsync(
-                    {
-                        // Define your custom recording settings here
-                        isMeteringEnabled: true, // Enable metering (useful for audio level analysis)
-                        android: {
-                          extension: '.wav',
-                          outputFormat: Audio.RECORDING_OPTION_ANDROID_OUTPUT_FORMAT_MPEG_4,
-                          audioEncoder: Audio.RECORDING_OPTION_ANDROID_AUDIO_ENCODER_AAC,
-                          sampleRate: 16000, // Sampling rate (standard is 44.1 kHz)
-                          numberOfChannels: 1, // Stereo
-                          bitRate: 128000, // Bit rate (128 kbps for good quality)
-                        },
-                        ios: {
-                          extension: '.wav',
-                          audioQuality: Audio.RECORDING_OPTION_IOS_AUDIO_QUALITY_HIGH,
-                          sampleRate: 16000,
-                          numberOfChannels: 2,
-                          bitRate: 128000,
-                          linearPCMBitDepth: 16,
-                          linearPCMIsBigEndian: false,
-                          linearPCMIsFloat: false,
-                        },
-                    }
-                );
-                setRecording(recording);
+                const newRecording = new Audio.Recording()
+                await newRecording.prepareToRecordAsync(recordingSettings)
+                await newRecording.startAsync()
+                setRecording(newRecording);
             }else{
                 return
             }
@@ -117,52 +108,61 @@ const VocabCard = ({ tone, pinyin }) => {
     const stopRecording = async() => {
         try{
             await recording.stopAndUnloadAsync();
-            const uri = recording.getURI(); 
-            setAudioUri(uri);
-            const encodedAudio = await encodeAudio(uri)
-            toneFunctionality(encodedAudio);
         }catch (err) {
             displayError("Issue Stopping Audio")
         }
+        const uri = recording.getURI(); 
+        setAudioUri(uri);
+        const encodedAudio = await encodeAudio(uri)
+        toneFunctionality(encodedAudio);
         setRecording(null);
+        setAttempted(true);
+        setSwipable(true);
     }
 
 
     const toneFunctionality = async(encodedAudio) => {
-        try{
-            await dispatch(getToneThunk({audio: encodedAudio, username: username}))
-            setAttempted(true);
-            setSwipable(true);
-            if (currentWord.tone === currTone){
-                setIsCorrect(true)
-            }
-            else{
-                setIsCorrect(false)
-            }
+        try {
+            await dispatch(getToneThunk({ audio: encodedAudio, username: username }))
+            .unwrap()
+            .then(() => {
+                console.log("currentword", currentWord.tone)
+                console.log("may ", currTone)
+                
+            })
+           
+           
+        } catch (error) {
+            displayError("Error Detecting Tone");
         }
-        catch(err){
-            displayError("Error Detecting Tone")
-
-        }
-
-    }
+    };
     
 
     //update state after swiping
     const updateStates = () => {
-        dispatch(updateStreak({length: currentStreak.length + 1, last: currentWord.character})) //will delete later NEED UPDATES
-        dispatch(updateAccuracy({"wordObj": currentWord, "correct": 1})) //ADD ACCURACY FOR CURRENT WORD
+        if (toneStatus === 'success'){
+            if (currentWord.tone === currTone){
+                dispatch(correct({wordObj: currentWord}))
+            }
+            else{
+                dispatch(incorrect({wordObj: currentWord}))
+            }
+
+        }
+         //will delete later NEED UPDATES
+        //ADD ACCURACY FOR CURRENT WORD
+        dispatch(resetToneStatus());
         const index = Math.floor(Math.random() * filterData.length);
         setCurrentWord(filterData[index]) //New Word for Vocab CARD
         if (soundRef.current){
             soundRef.current.unloadAsync();
             soundRef.current = null;
         }
+        deleteURI(audioUri);
         setAttempted(false);
-        setIsCorrect(true);
         setSwipable(false);
         setAudioUri(null);
-        updatetoAWS();
+        updatetoAWS(); //In the Background
         //dispatch(updateUserLSThunk({username, longest: longestStreak}))
         console.log("FINISHED ALL UPDATES")
 
@@ -188,6 +188,10 @@ const VocabCard = ({ tone, pinyin }) => {
     const returnCardPosition = () => {
         translateX.value = withDelay(2000, withSpring(0))
     }
+    const animatedStyle = useAnimatedStyle(() => ({
+        transform: [{translateX: translateX.value }]
+
+    }));
     const swipeGesture = Gesture.Pan()
         .enabled(isSwipable)
         .onUpdate((event) => {
@@ -203,10 +207,8 @@ const VocabCard = ({ tone, pinyin }) => {
             translateX.value = 0; 
         })
 
-
     //FILTER DATA BASED ON PINYIN/TONE, MEMO VALUE SO THIS FUNCTION IS NOT RUN EVERY RERENDER
     const filterData = useMemo(() => {
-        console.log(pinyin);
         return words.filter((item) => {
             let arrayPinyin = diacriticless(item.pinyin.toLowerCase());
             
@@ -221,29 +223,15 @@ const VocabCard = ({ tone, pinyin }) => {
         });
     }, [pinyin, tone]);
 
-    const animatedStyle = useAnimatedStyle(() => ({
-        transform: [{translateX: translateX.value }]
-
-    }));
-    console.log("component rerender")
-    console.log(currentWord.tone)
     
     //WHEN WE HAVE AUDIO URI THIS IS THE CONTENT TO DISPLAY
     const recordingResultComponent = () => {
-
         if (audioUri){
             return (
-                <View style = {style.audioContainer}>
-                     <View style = {[style.toneTextContainer, isCorrect ? {backgroundColor: 'lightcoral'} : {backgroundColor: 'lightgreen'}]} backgroundColor = "lightgreen"> 
-                        <Text style = {style.resultStyle}>Your Tone: </Text>
-                        <Text style = {style.resultStyle}>3</Text>
-                    </View>
+               <View style = {{marginTop: 10}}>
                     <TouchableOpacity style = {style.playButton} onPress={playAudio}>
                         <Icon name = "play-circle" size = {16}/>
-                        <Text marginTop = {0} marginLeft = {5} fontSize = {20}>Playback Audio</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style = {style.placeholder} onPress = {() => navigation.navigate("Voice", {tone: currentWord.tone})}>
-                        <Text style = {style.compareText}>See Voice Graph</Text>
+                        <Text style = {style.compareText}>Playback Audio</Text>
                     </TouchableOpacity>
                 </View>
             )
@@ -253,18 +241,63 @@ const VocabCard = ({ tone, pinyin }) => {
         }
 
     }
+    console.log(toneStatus)
+    //ONCE WE COMPUTE THE TONE RETURN IT TO THE USER
+    const toneResultComponent = () => {
+        switch (toneStatus){
+        case 'success':
+            return(
+            <View style = {style.audioContainer}>
+                <View style = {[style.toneTextContainer, currentWord.tone === currTone ? {backgroundColor : "lightgreen"} : {backgroundColor: 'lightcoral'}]}> 
+                    <Text style = {style.resultStyle}>Your Tone: </Text>
+                    <Text style = {style.resultStyle}>{currTone}</Text>
+                </View>
+                <TouchableOpacity style = {style.navContainer} onPress = {() => navigation.navigate("Voice", {tone: currentWord.tone})}>
+                    <Text style = {style.compareText}>See Voice Graph</Text>
+                </TouchableOpacity>
+           </View>
+            )
+        case 'loading':
+            return (
+                <View style = {style.audioContainer} >
+                    <ActivityIndicator size = 'large' color = "red"/>
+                </View>
+            )
+        case 'failed':
+            return (
+                <></>
+        
+
+            )
+        case 'idle':
+            return <></>
+
+        }
+
+    }
 
     //IF CARD IS REPLAYED - SIMILAR TO UPDATESTATES, JUST DOESN'T CHANGE THE CURRENT WORD
     const replayCard = () => {
         if (attempted){
             setAttempted(false);
             setAudioUri(null); 
-            soundRef.current.unloadAsync();
-            soundRef.current = null;
-            dispatch(updateAccuracy({"wordObj": currentWord, "correct": 1}));
-            setIsCorrect(false);
+            if (soundRef.current){
+                soundRef.current.unloadAsync();
+                soundRef.current = null;
+            }
+            if (currentWord.tone === currTone){
+                dispatch(correct({wordObj: currentWord}))
+            }
+            else{
+                dispatch(incorrect({wordObj: currentWord}))
+            }
             updatetoAWS();
+            dispatch(resetToneStatus())
         }
+        else{
+            return
+        }
+       
        
 
 
@@ -274,7 +307,7 @@ const VocabCard = ({ tone, pinyin }) => {
    const mainCard = () => {
         return (
             <GestureDetector gesture={swipeGesture}>
-                <Animated.View style = {[style.shadowContainer, animatedStyle, !attempted ? style.notAttempt : isCorrect ? style.correctShadow : style.incorrectShadow] }>
+                <Animated.View style = {[style.shadowContainer, animatedStyle, !attempted ? style.notAttempt : currentWord.tone === currTone ? style.correctShadow : style.incorrectShadow] }>
                     <View style = {style.viewStyle}>
                         <View style = {style.redo}> 
                             <Text style = {style.pinyinStyle}> {currentWord.pinyin} {currentWord.tone}</Text>
@@ -299,6 +332,7 @@ const VocabCard = ({ tone, pinyin }) => {
                                 <Icon name = "microphone-alt" size = {40} color = "black"/>
                         </TouchableOpacity> }
                         {recordingResultComponent()}
+                        {toneResultComponent()}
                     </View>
                 </Animated.View>
             </GestureDetector>
@@ -310,13 +344,15 @@ const VocabCard = ({ tone, pinyin }) => {
         <View style = {style.overallContainer}>
         {
         filterData.length > 1 ? mainCard() :
-        <Text style = {style.noWord}> Try Another Pinyin/Tone Combo</Text>}
-        {error ? 
-        <View style = {{marginTop: 10}}> 
-            <Text style = {style.noWord}> {error} </Text>
+        <View style = {{marginTop: 10,  alignItems: 'center', justifyContent: 'center'}}> 
+            <Text style = {style.noWord}> Try Another Pinyin/Tone Combo</Text>
         </View>
-        
-        
+        }
+        {localError 
+        ? 
+        <View style = {{marginTop: 10, alignItems: 'center', justifyContent: 'center', borderWidth:2, borderColor: 'black'}}> 
+            <Text style = {style.noWord}> {localError} </Text>
+        </View>
        : <></> }
 
         </View>
@@ -379,7 +415,6 @@ const style = StyleSheet.create({
 
 
     pinyinStyle: {
-
         fontSize: 25, 
         marginTop: 5,
         textAlign: 'center',
@@ -404,8 +439,8 @@ const style = StyleSheet.create({
         justifyContent: 'center'
     },
 
-    placeholder: {
-        marginTop: 25,
+    navContainer: {
+        marginTop: 15,
     },
 
     compareText: {
@@ -418,7 +453,7 @@ const style = StyleSheet.create({
     },
     audioContainer : {
         flexDirection: 'column',
-        margin: 20,
+        margin: 10,
         alignItems: 'center'
     },
     playButton: {
@@ -446,10 +481,12 @@ const style = StyleSheet.create({
         alignItems: 'center',
     },
     noWord: {
-        backgroundColor: 'lightcoral',
-        color: 'black',
+        backgroundColor: 'red',
+        color: 'white',
         borderRadius: 3,
-        fontSize: 20
+        fontSize: 20,
+        borderWidth:2, 
+        borderColor: 'black'
 
     }
 

@@ -2,6 +2,8 @@ import { configureStore } from '@reduxjs/toolkit';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { combineReducers } from 'redux';
 import userReducer from './userReducer2';
+import toneReducer from './toneReducer';
+import imageReducer from './imageReducer';
 import { persistStore, persistReducer } from 'redux-persist'; 
 
 const persistConfig = {
@@ -15,7 +17,9 @@ const persistedReducer = persistReducer(persistConfig, userReducer)
 
 
 const rootReducer = combineReducers({
-    user: persistedReducer
+    user: persistedReducer,
+    tone: toneReducer,
+    image: imageReducer,
 });
 
 

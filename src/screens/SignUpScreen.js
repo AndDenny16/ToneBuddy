@@ -15,7 +15,7 @@ import { useDispatch, useSelector } from 'react-redux';
 const SignUpScreen = () => {
     const navigation = useNavigation();
     const [usernameText, setUsername] = useState("");
-    const {loading, error } = useSelector((state) => state.user)
+    const {error, status} = useSelector((state) => state.user)
     const {width, height} = Dimensions.get('window');
 
     const isValidInput = (text) => /^\w+$/.test(text);
@@ -35,6 +35,35 @@ const SignUpScreen = () => {
         
     }
 
+
+    const loginSwitch = () => {
+        switch(status){
+            case 'idle':
+                return(
+                    <StyleButton title = "Sign Up!" onPress={setUsernameRedux}/>
+                )
+
+            case "loading": 
+                return(
+                        <ActivityIndicator size = 'small' color = "red"/>
+
+                )
+            case "failed": 
+
+                return (
+                        <Text style = {{marginTop: 5, fontSize: 20 }}>{error}!</Text>
+                )
+
+
+            default:
+                return (
+                    <Text> Username Created !</Text>
+                )
+
+
+        }
+    }
+
     return(
         <SafeAreaProvider>
             <SafeAreaView style = {[style.container]}>
@@ -45,8 +74,7 @@ const SignUpScreen = () => {
                         style = {style.textInput}/>
                 </View>
                 <View style = {style.buttonContainer}>
-                    {loading ?  <ActivityIndicator size = 'small' color = "red"/> : <StyleButton title = "Sign Up!" onPress={setUsernameRedux}/>}
-                    {error && !loading && <Text style = {{marginTop: 5, fontSize: 20 }}>{error}!</Text>}
+                   {loginSwitch()}
                 </View>
                 
 
@@ -92,7 +120,7 @@ const style = StyleSheet.create({
         backgroundColor:'white',
         borderWidth: 2, 
         borderColor: 'red',
-        width: 270,
+        width: "80%",
         height: 50,
         shadowOpacity: 0.3, // Transparency of shadow
         shadowRadius: 10, // Soft blur radius

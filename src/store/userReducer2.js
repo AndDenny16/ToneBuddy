@@ -1,11 +1,14 @@
-import { createSlice,createAsyncThunk,  } from "@reduxjs/toolkit";
+import { createSlice,createAsyncThunk } from "@reduxjs/toolkit";
+import { API_URL } from "@env"
+
+
 
 
 const createUser = createAsyncThunk(
     'user/createuser',
     async(username, thunkAPI) => {
         try{
-            const response = await fetch("https://jjsv72hf07.execute-api.us-east-1.amazonaws.com/dev/createuser", {
+            const response = await fetch(`${API_URL}/createuser`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -35,7 +38,8 @@ const getUserData = createAsyncThunk(
     'user/getUserData',
     async(username, thunkAPI) => {
         try{
-            const response = await fetch(`https://jjsv72hf07.execute-api.us-east-1.amazonaws.com/dev/fetchuser?username=${encodeURIComponent(username)}`);
+            console.log(API_URL)
+            const response = await fetch(`${API_URL}/fetchuser?username=${encodeURIComponent(username)}`);
             if(!response.ok){
                 throw new Error("User Data Not Found");
             }
@@ -53,7 +57,7 @@ const updateUser = createAsyncThunk(
     "user/updateUser", 
     async({username, updated}, thunkAPI) => {
         try{
-            const response = await fetch("https://jjsv72hf07.execute-api.us-east-1.amazonaws.com/dev/updateuser", {
+            const response = await fetch(`${API_URL}/updateuser`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -83,7 +87,7 @@ const updateUserLS = createAsyncThunk(
     async({username, longest}, thunkAPI) => {
         try{
             
-            const response = await fetch("https://jjsv72hf07.execute-api.us-east-1.amazonaws.com/dev/updatestreak", {
+            const response = await fetch(`${API_URL}/updatestreak`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -111,42 +115,12 @@ const updateUserLS = createAsyncThunk(
 )
 
 
-const getTone = createAsyncThunk(
-    "user/getTone", 
-    async({username, audio}, thunkAPI) => {
-        try{
-            
-            const response = await fetch("http://172.20.10.11:6000/predict", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: {
-                    "audio": audio,
-                    "username": username
-                }
-            });
-
-            if (!response.ok){
-                throw new Error("Connect to the Internet to Get Tone")
-            }
-            console.log(response)
-
-            const responseData = await response.json();
-            return responseData;
-        }catch(error){
-            return thunkAPI.rejectWithValue(error.message)
-        }
-    }
-)
-
 
 const userReducer = createSlice({
     name: 'user',
     initialState: {
         username: '',
         updated: [],
-        currTone: null,  
         currentStreak: {
             last: "",
             length: 0
@@ -157,32 +131,20 @@ const userReducer = createSlice({
         },
         accuracyArray: [],
         error: null,
-        loading: false
+        status: 'idle'
     },
     reducers: {
-        updateStreak: (state, action) => {
-            const {length, last} = action.payload; 
+        incorrect: (state, action) => {
+            const {wordObj} = action.payload;
             state.currentStreak = {
-                length: length,
-                last: last
+                length: 0,
+                last: ""
             }
-            if (length > state.longestStreak.length){
-                state.longestStreak = {
-                    length: length,
-                    last: last
-                }
-            }
-
-
-        },
-        updateAccuracy: (state, action) => {
-            const {wordObj, correct} = action.payload;
-            console.log(wordObj);
             const {character} = wordObj;
             let updatedObject = null;
             state.accuracyArray = state.accuracyArray.map((item) => {
                 if (item.character == character){
-                    updatedObject = {...item, attempts: item.attempts +1, correct: item.correct + correct }
+                    updatedObject = {...item, attempts: item.attempts +1, correct: item.correct }
                     return updatedObject
                 }else{
                     return item
@@ -192,11 +154,34 @@ const userReducer = createSlice({
             if (updatedObject){
                 state.updated.push(updatedObject);
             }
-            
+
         },
-        updateError: (state, action) => {
-            const errorMessage = action.payload; 
-            state.error = errorMessage
+
+        correct: (state, action) => {
+            const {wordObj} = action.payload;
+            const {character} = wordObj;
+            state.currentStreak = {
+                length: state.currentStreak.length + 1,
+                last: character
+            }
+            
+            let updatedObject = null;
+            state.accuracyArray = state.accuracyArray.map((item) => {
+                if (item.character == character){
+                    updatedObject = {...item, attempts: item.attempts +1, correct: item.correct + 1 }
+                    return updatedObject
+                }else{
+                    return item
+                }
+            }
+            );
+            if (updatedObject){
+                state.updated.push(updatedObject);
+            }
+
+        },
+        resetStatus: (state, action) => {
+            state.status = 'idle'
         }
 
 
@@ -206,11 +191,11 @@ const userReducer = createSlice({
 
             //CreateUser cases
             .addCase(createUser.pending, (state) => {
-                state.loading = true;
+                state.status = 'loading';
             
             })
             .addCase(createUser.fulfilled, (state, action) => {
-                state.loading = false;
+                state.status = 'success';
                 const {username,longestStreak, stats} = action.payload;
                 state.username = username;
                 state.longestStreak = longestStreak;
@@ -224,15 +209,15 @@ const userReducer = createSlice({
 
             })
             .addCase(createUser.rejected, (state, action) => {
-                state.loading = false;
+                state.status = 'failed';
                 state.error = action.payload;
             })
             //GetUser CASES
             .addCase(getUserData.pending, (state) => {
-                state.loading = true;
+                state.status = 'loading';
             })
             .addCase(getUserData.fulfilled, (state, action) => {
-                state.loading = false;
+                state.status = 'success';
                 const {longestStreak, stats} = action.payload;
                 state.longestStreak = longestStreak;
                 const accuracyList = Object.entries(stats).map(([character, stats]) => ({
@@ -246,7 +231,7 @@ const userReducer = createSlice({
             })
             .addCase(getUserData.rejected, (state, action) => {
                 state.error = action.payload;
-                state.loading = false;
+                state.status = 'failed';
             })
             //UpdateUser Cases
             .addCase(updateUser.fulfilled, (state,action) => {
@@ -258,29 +243,15 @@ const userReducer = createSlice({
             .addCase(updateUserLS.rejected, (state,action) => {
                state.error = action.payload
             })
-            //GetTone Cases
-            .addCase(getTone.pending, (state,action) => {
-                state.loading = true;
-            })
-            .addCase(getTone.fulfilled, (state, action) => {
-                state.loading = false;
-                // const {tone} = action.payload
-                // state.tone = tone;
-                console.log(action.payload);
-            })
-            .addCase(getTone.rejected, (state,action) => {
-                state.loading = false;
-                state.error = action.payload;
-            })
     } 
 
 })
 
 
-export const { updateStreak, updateAccuracy, updateError } = userReducer.actions; //Non async actions
-export const createUserThunk = createUser;  //async thunks
+export const { correct, incorrect,resetStatus } = userReducer.actions; //Non async actions
 export default userReducer.reducer; 
+ //async thunks
 export const getUserDataThunk = getUserData;
 export const updateUserThunk = updateUser;
 export const updateUserLSThunk = updateUserLS;
-export const getToneThunk = getTone;
+export const createUserThunk = createUser; 

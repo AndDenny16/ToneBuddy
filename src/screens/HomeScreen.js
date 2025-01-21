@@ -59,7 +59,7 @@ const HomeScreen = () => {
       <Header headerText={"Tone Buddy"}/>
     
       <View style = {style.streakStyle}>
-            <Icon name = "fire" size = {20} marginRight = {5} color={"red"}/>
+            <Icon name = "fire" size = {30} marginRight = {5} color={"red"}/>
             <Text style = {style.streakText}>Your Streak: {currentStreak.length}</Text> 
         </View> 
         <View style = {style.inputsContainer}>
@@ -74,7 +74,8 @@ const HomeScreen = () => {
                     placeholder="Select a Tone" 
                     style={{
                         width: 120,
-                        borderWidth: 2// Set fixed width for alignment
+                        borderWidth: 2
+
                     }}/>
             </View>
             <View>
@@ -135,7 +136,8 @@ const style = StyleSheet.create({
     },
     streakText: {
         marginTop: 2,
-        fontSize: 20
+        fontSize: 20,
+        fontWeight: 'bold'
 
 
     },
@@ -151,7 +153,8 @@ const style = StyleSheet.create({
         borderWidth: 2,
         width: 120,
         height: 50,
-        borderRadius: 2
+        borderRadius: 8,
+        paddingLeft: 5
       },
 
 })
