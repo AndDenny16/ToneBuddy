@@ -7,11 +7,12 @@ import DropDownPicker from 'react-native-dropdown-picker';
 import { TextInput } from 'react-native-gesture-handler';
 import { useSelector } from 'react-redux';
 import diacriticless from 'diacriticless'
+import UserRecap from '../components/UserRecap';
 
 const StreakScreen = () => {
 
   //Array that contains our Accuracies
-  const {accuracyArray: accuracies} = useSelector((state) => state.user);
+  const {accuracyArray: accuracies, username, error} = useSelector((state) => state.user);
   
   const [open, setOpen] = useState(false);
   const [value, setValue ] = useState("Any");
@@ -38,13 +39,14 @@ const StreakScreen = () => {
       }
       
     }).sort((a,b) => b.attempts - a.attempts)
-  }, [text, value]);
+  }, [text, value, accuracies]);
 
   
   return (
     <SafeAreaProvider>
     <SafeAreaView style = {styles.container}> 
       <Header headerText={"Tone Buddy"}/>
+      <UserRecap/>
       <View style = {styles.inputsContainer}>
         <View style = {styles.dropdownContainer}>
               <DropDownPicker 
@@ -81,11 +83,12 @@ const StreakScreen = () => {
             <ToneRecap character={item.character} tone = {item.tone} percent = {item.attempts> 0 ? item.correct/item.attempts : 0} pinyin = {item.pinyin} attempts={item.attempts} trad = {item.trad}/>
           
           }
-          
+          showsVerticalScrollIndicator={false}
           />
-
       </View>
 
+        
+      
     </SafeAreaView>
     </SafeAreaProvider>
   )
@@ -105,7 +108,7 @@ dropdownContainer: {
 },
 flatList: {
   marginTop: 15,
-  marginBottom: 150
+  height: 395
 },
 textInput: {
   backgroundColor: 'white',
@@ -119,7 +122,8 @@ textInput: {
 inputsContainer:{
   flexDirection: 'row',
   alignItems: 'center',
-  justifyContent: 'space-between'
+  justifyContent: 'space-between',
+  marginTop: 5
 },
 cText: {
   fontSize: 20

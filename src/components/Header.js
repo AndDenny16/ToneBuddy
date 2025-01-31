@@ -21,14 +21,14 @@ const Header = ({headerText}) => {
 
 const style = StyleSheet.create({
     textStyle: {
-        fontSize: 42,
-        marginTop: 20,
+        fontSize: 44,
+        marginTop: 18,
         marginLeft: 10,
         fontWeight: "500"
     },
 
     imageStyle: {
-        width: 80,
+        width: 82,
         height: 80,
         borderColor: 'black'
         
@@ -41,7 +41,7 @@ const style = StyleSheet.create({
     line: {
         borderBottomColor: '#ccc', // Line color
         borderBottomWidth: 2, // Line thickness
-        marginVertical: 10,
+        marginVertical: 8,
       },
 
 

@@ -1,6 +1,10 @@
 import * as FileSystem from 'expo-file-system'
 import {Audio } from 'expo-av'
 
+import { useSelector } from 'react-redux';
+
+
+
 
 
 export const encodeAudio = async( audioUri ) => {
@@ -39,12 +43,28 @@ export const recordingSettings = {
     ios: {
       extension: '.wav',
       audioQuality: Audio.RECORDING_OPTION_IOS_AUDIO_QUALITY_HIGH,
-      sampleRate: 44100,
+      sampleRate: 16000,           // <-- Lower sample rate here
       numberOfChannels: 1,
-      bitRate: 1411200, // 44.1kHz * 16 bits * 1 channel
-      linearPCMBitDepth: 16,
+      bitRate: 256000,
       linearPCMIsBigEndian: false,
       linearPCMIsFloat: false,
     },
   };
 
+
+  ///UPDATE TO AWS = ACCURACIES EVERY 20 WORDS, Updated Words is persisted, so if user exists before 20 its handled
+    ////BIG PROBLEM WITH THIS SHIIIIT - will consider fixing this later
+  export const updatetoAWS = async(updated) => {
+      if (updated.length >= 20){
+          console.log("inside here");
+          try{
+             console.log('Updating to AWS')
+             dispatch(updateUserThunk({username, updated}))
+             console.log('Successful Update to AWS')
+
+          }catch(error){
+              console.error("AWS update failed:", error);
+          }
+          
+      }
+  }

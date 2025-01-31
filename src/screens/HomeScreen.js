@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import { Text, View, Button, TextInput, Alert } from 'react-native';
+import { Text, View, Button, TextInput, Alert, Touchable, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StyleSheet } from 'react-native';
 import Header from '../components/Header';
@@ -9,12 +9,18 @@ import Icon from 'react-native-vector-icons/FontAwesome5';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { useDispatch, useSelector } from 'react-redux';
 import { Audio } from 'expo-av';
+import { resetStatus, fullUpdateThunk } from '../store/userReducer2';
+
 
 
 
 
 
 const HomeScreen = () => {
+
+    const {longestStreak, username, updated} = useSelector((state) => state.user);
+
+    const dispatch = useDispatch();
 
     const getAudioPermission = async () => {
         const {status, canAskAgain} = await Audio.requestPermissionsAsync();
@@ -31,6 +37,7 @@ const HomeScreen = () => {
         Alert.alert("Tone Buddy Needs Access to Microphone, Please Go to Settings")
 
     }
+
 
 
     //CHECK AUDIO PERMISSIONS
@@ -51,7 +58,27 @@ const HomeScreen = () => {
 
     const [pinyin, setPinyin] = useState(""); //TEXT INPUT
 
-    const {username, currentStreak, longestStreak,} = useSelector((state)=> state.user);
+    const {currentStreak, error, status} = useSelector((state)=> state.user);
+    console.log("htis", status)
+
+    const errorIcon = () => {
+        switch(status){
+            case 'failed': 
+            return (
+                <View>
+                <Text style={{ color: 'white', fontSize: 12, fontWeight: 'bold',textAlign: 'center', paddingLeft: 6, paddingVertical: 2}}>Failed Stats/Streak Upload</Text>
+                <Text style={style.errorText}>Click to Retry</Text>
+                </View>
+            )
+
+
+            case 'loading': 
+                return (
+                <ActivityIndicator color = 'white' size = {10} />
+            )
+
+        }
+    }
   return (
     <SafeAreaProvider>
 
@@ -89,6 +116,12 @@ const HomeScreen = () => {
         <View style = {[style.vocabCardStyleStreak]}>
             <VocabCard tone = {value} pinyin = {pinyin.toLowerCase()}/>
         </View>
+        {error &&
+        <TouchableOpacity style={style.errorOverlay} onPress = {() => dispatch(fullUpdateThunk({username: username, longest: longestStreak, updated: updated}))}>
+        <View>
+           {errorIcon()}
+        </View>
+        </TouchableOpacity>}
         
      
       
@@ -154,8 +187,30 @@ const style = StyleSheet.create({
         width: 120,
         height: 50,
         borderRadius: 8,
-        paddingLeft: 5
-      },
+        paddingLeft: 5    
+    },
+    errorOverlay: {
+        borderWidth: 2,
+        borderColor:'black',
+        position: 'absolute',
+        width: "45%",
+        height: "8%",
+        top: "92%",
+        left: "-12%",
+        backgroundColor: 'rgba(200, 0, 0, 0.8)', // Semi-transparent black background
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 10, // Ensures it is above the VocabCard
+        borderRadius: 10, 
+        
+    },
+    
+    errorText: {
+        color: 'white',
+        fontSize: 10,
+        textAlign: 'center',
+        paddingLeft: 6,
+    },
 
 })
 

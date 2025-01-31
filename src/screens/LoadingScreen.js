@@ -22,16 +22,22 @@ const LoadingScreen = () => {
         }
     };
 
+    const navigateAndReset = () => {
+        dispatch(resetStatus());
+        navigation.navigate("SignUp");
+    }
 
-    const getUserData = () => {
+
+    const getUserData = async() => {
         console.log('CHECKING IF ALREADY HAVE USER');
+        console.log(username)
         if (username){
-            dispatch(getUserDataThunk(username))
-            .unwrap()
-            .then(() => {
+            await dispatch(getUserDataThunk(username)).unwrap()
                 navigation.navigate("MainApp");
                 dispatch(resetStatus())
-            })
+            .catch((error) => {
+                console.error("Error fetching user data:", error);
+            });
         }
         else{
             navigation.navigate('SignUp')
@@ -43,7 +49,13 @@ const LoadingScreen = () => {
             case "loading":
                 return <ActivityIndicator size = 'large' color = "red"/>
             case "failed": 
-                return  <StyleButton title='Load Failed, Retry?' onPress={getUserData}/>
+                return  (
+                    <View>
+                        <StyleButton title='Retry Load?' onPress={getUserData}/>
+                        <View style = {{height: 10}}></View>
+                        <StyleButton title="Sign Up" onPress = {() => navigateAndReset()}/>
+                    </View>
+                )
             default:
                 return <></>
         }

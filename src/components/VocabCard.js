@@ -9,14 +9,12 @@ import diacriticless from "diacriticless";
 import { Audio } from "expo-av";
 import { incorrect, correct, updateUserThunk, updateError, updateUserLSThunk } from "../store/userReducer2";
 import { getToneThunk, resetToneStatus } from "../store/toneReducer";
-import { encodeAudio,recordingSettings, deleteURI  } from "./AudioRecorder";
+import { encodeAudio,recordingSettings, deleteURI, updatetoAWS  } from "./AudioRecorder";
 
 
 
 const VocabCard = ({ tone, pinyin }) => {
-    //STATE VARIABLES FOR SWIPING/CORRECT/ATTEMPTED
-    const [attempted, setAttempted] = useState(false);
-    const [isSwipable, setSwipable] = useState(false);
+   //LOCAL DISPLAY ERROR
     const [localError, setlocalError] = useState(null);
 
     //STATE VARIABLES FOR RECORDING
@@ -25,22 +23,20 @@ const VocabCard = ({ tone, pinyin }) => {
     const soundRef = useRef(null);
 
     //REDUX STATE
-    const {accuracyArray: words, updated, username, longestStreak, status} = useSelector((state) => state.user);
-    const {currTone, currScore, toneStatus } = useSelector((state) => state.tone);
+    const {accuracyArray: words, updated, username, error} = useSelector((state) => state.user);
+    const {currTone, toneStatus, swipable, toneError} = useSelector((state) => state.tone);
     const dispatch = useDispatch();
-
-    console.log("STATUS", status)
 
     //CURRENT VOCAB CARD WORD
     const [currentWord, setCurrentWord] = useState(words[Math.floor(Math.random() * words.length)]);
-    //SWIPING TRANSLATION VALUE
+
+    //SWIPING TRANSLATION VALUES
     const translateX = useSharedValue(0);
     const { width: SCREEN_WIDTH } = Dimensions.get('window');
     const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.30;
 
     //NAVIGATION
     const navigation = useNavigation(); 
-    console.log("cjsdklfjal", currScore)
     
     //Error Notification Function
     const timeoutRef = useRef(null);
@@ -71,10 +67,8 @@ const VocabCard = ({ tone, pinyin }) => {
             }
             const { sound } = await Audio.Sound.createAsync({ uri: audioUri });
             soundRef.current = sound; 
-            //await soundRef.current.setVolumeAsync(1.0);
             await soundRef.current.replayAsync();
         }catch(error){
-            console.log(error);
             displayError("Issue Playing Audio, Try Again")
         }
     }
@@ -82,7 +76,7 @@ const VocabCard = ({ tone, pinyin }) => {
     //START RECORDING
     const startRecording = async() =>{
         try{
-            if (attempted){
+            if (toneStatus === "success"){
                 return
             }
             const { status } = await Audio.getPermissionsAsync();
@@ -100,57 +94,30 @@ const VocabCard = ({ tone, pinyin }) => {
                 return
             }
         } catch (err) {
-            displayError("Issue Starting Recording, Try Again")
+            displayError("Check Recording Permissions")
         }
     }
     
-    //STOP RECORDING AND SET URI
+   
     const stopRecording = async() => {
+        //Stop the Recording
         try{
             await recording.stopAndUnloadAsync();
         }catch (err) {
             displayError("Issue Stopping Audio")
         }
+        //SET URI and Encode Audio
         const uri = recording.getURI(); 
         setAudioUri(uri);
         const encodedAudio = await encodeAudio(uri)
-        toneFunctionality(encodedAudio);
         setRecording(null);
-        setAttempted(true);
-        setSwipable(true);
+        dispatch(getToneThunk({ audio: encodedAudio, username: username, currentWord: currentWord})).unwrap()
+
     }
-
-
-    const toneFunctionality = async(encodedAudio) => {
-        try {
-            await dispatch(getToneThunk({ audio: encodedAudio, username: username }))
-            .unwrap()
-            .then(() => {
-                console.log("currentword", currentWord.tone)
-                console.log("may ", currTone)
-                
-            })
-           
-           
-        } catch (error) {
-            displayError("Error Detecting Tone");
-        }
-    };
     
 
-    //update state after swiping
-    const updateStates = () => {
-        if (toneStatus === 'success'){
-            if (currentWord.tone === currTone){
-                dispatch(correct({wordObj: currentWord}))
-            }
-            else{
-                dispatch(incorrect({wordObj: currentWord}))
-            }
-
-        }
-         //will delete later NEED UPDATES
-        //ADD ACCURACY FOR CURRENT WORD
+    //THIS
+    const onSwipe = () => {
         dispatch(resetToneStatus());
         const index = Math.floor(Math.random() * filterData.length);
         setCurrentWord(filterData[index]) //New Word for Vocab CARD
@@ -159,30 +126,19 @@ const VocabCard = ({ tone, pinyin }) => {
             soundRef.current = null;
         }
         deleteURI(audioUri);
-        setAttempted(false);
-        setSwipable(false);
         setAudioUri(null);
-        updatetoAWS(); //In the Background
-        //dispatch(updateUserLSThunk({username, longest: longestStreak}))
-        console.log("FINISHED ALL UPDATES")
-
-
-    }
-    ///UPDATE TO AWS = ACCURACIES EVERY 20 WORDS, Updated Words is persisted, so if user exists before 20 its handled
-    const updatetoAWS = async() => {
+        
         if (updated.length >= 20){
-            console.log("inside here");
-            try{
-               console.log('Updating to AWS')
-               dispatch(updateUserThunk({username, updated}))
-               console.log('Successful Update to AWS')
-
-            }catch(error){
-                console.error("AWS update failed:", error);
-            }
-            
+            dispatch(updateUserThunk({username, updated}))
         }
+        console.log("FINISHED ALL UPDATES")
     }
+
+
+  
+
+
+
 
     //SwIPING FUNCTIONALITY
     const returnCardPosition = () => {
@@ -193,13 +149,13 @@ const VocabCard = ({ tone, pinyin }) => {
 
     }));
     const swipeGesture = Gesture.Pan()
-        .enabled(isSwipable)
+        .enabled(swipable)
         .onUpdate((event) => {
             translateX.value = event.translationX
         }).onEnd(() => {
             if (Math.abs(translateX.value) > SWIPE_THRESHOLD) {
                 translateX.value = withSpring(SCREEN_WIDTH * Math.sign(translateX.value), {}, () => {
-                    runOnJS(updateStates)();
+                    runOnJS(onSwipe)();
                     runOnJS(returnCardPosition)();
               })} else {
                 runOnJS(returnCardPosition)(); // Reset to center if swipe is insufficient
@@ -231,7 +187,7 @@ const VocabCard = ({ tone, pinyin }) => {
                <View style = {{marginTop: 10}}>
                     <TouchableOpacity style = {style.playButton} onPress={playAudio}>
                         <Icon name = "play-circle" size = {16}/>
-                        <Text style = {style.compareText}>Playback Audio</Text>
+                        <Text style = {{fontSize: 16, marginLeft: 5}}>Playback Audio</Text>
                     </TouchableOpacity>
                 </View>
             )
@@ -265,9 +221,12 @@ const VocabCard = ({ tone, pinyin }) => {
             )
         case 'failed':
             return (
-                <></>
-        
-
+                <View style = {style.errorContainer2} >
+                     <TouchableOpacity onPress = {replayCard} style = {{flexDirection: 'row'}}>
+                    <Text style = {{color: 'white', marginRight: 3}}> {toneError} </Text>
+                    <Icon name="redo" size = {14} color = "white" style = {{marginTop: 1}}/>
+                    </TouchableOpacity>
+                </View>
             )
         case 'idle':
             return <></>
@@ -276,38 +235,36 @@ const VocabCard = ({ tone, pinyin }) => {
 
     }
 
+
+    ////Figure this shit out : ispatch(resetToneStatus())
+
     //IF CARD IS REPLAYED - SIMILAR TO UPDATESTATES, JUST DOESN'T CHANGE THE CURRENT WORD
     const replayCard = () => {
-        if (attempted){
-            setAttempted(false);
-            setAudioUri(null); 
+        if (toneStatus === "success" || toneStatus === "failed"){
+            dispatch(resetToneStatus());
             if (soundRef.current){
                 soundRef.current.unloadAsync();
                 soundRef.current = null;
             }
-            if (currentWord.tone === currTone){
-                dispatch(correct({wordObj: currentWord}))
-            }
-            else{
-                dispatch(incorrect({wordObj: currentWord}))
-            }
-            updatetoAWS();
-            dispatch(resetToneStatus())
+            deleteURI(audioUri);
+            setAudioUri(null); 
+           
         }
         else{
-            return
+            displayError("Please Attempt First")
         }
        
        
 
 
     }
+    console.log(toneStatus)
 
     //MAIN CARD COMPONENT
    const mainCard = () => {
         return (
             <GestureDetector gesture={swipeGesture}>
-                <Animated.View style = {[style.shadowContainer, animatedStyle, !attempted ? style.notAttempt : currentWord.tone === currTone ? style.correctShadow : style.incorrectShadow] }>
+                <Animated.View style = {[style.shadowContainer, animatedStyle, toneStatus === 'idle' ? style.notAttempt : currentWord.tone === currTone ? style.correctShadow : style.incorrectShadow] }>
                     <View style = {style.viewStyle}>
                         <View style = {style.redo}> 
                             <Text style = {style.pinyinStyle}> {currentWord.pinyin} {currentWord.tone}</Text>
@@ -340,17 +297,19 @@ const VocabCard = ({ tone, pinyin }) => {
     }
 
 
+    console.log(updated.length);
+
     return (
         <View style = {style.overallContainer}>
         {
-        filterData.length > 1 ? mainCard() :
-        <View style = {{marginTop: 10,  alignItems: 'center', justifyContent: 'center'}}> 
-            <Text style = {style.noWord}> Try Another Pinyin/Tone Combo</Text>
+        filterData.length >= 1 ? mainCard() :
+        <View style = {{marginTop: 10,  alignItems: 'center', justifyContent: 'center', }}> 
+            <Text style = {style.noWord}>Try Another Pinyin/Tone Combo</Text>
         </View>
         }
         {localError 
         ? 
-        <View style = {{marginTop: 10, alignItems: 'center', justifyContent: 'center', borderWidth:2, borderColor: 'black'}}> 
+        <View style = {style.errorContainer}> 
             <Text style = {style.noWord}> {localError} </Text>
         </View>
        : <></> }
@@ -367,6 +326,17 @@ const VocabCard = ({ tone, pinyin }) => {
 
 }
 
+
+const shadow = {
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    shadowColor: '#000', // Shadow color
+    shadowOffset: { width: 0, height: 8 }, // Vertical shadow for depth
+    shadowOpacity: 0.3, // Transparency of shadow
+    shadowRadius: 10, // Soft blur radius
+    elevation: 10, // Android shadow // Same border radius as inner card
+
+}
 
 const style = StyleSheet.create({
 
@@ -481,13 +451,30 @@ const style = StyleSheet.create({
         alignItems: 'center',
     },
     noWord: {
-        backgroundColor: 'red',
+        backgroundColor: 'rgba(230, 0, 0, 0.8)',
         color: 'white',
         borderRadius: 3,
-        fontSize: 20,
+        fontSize: 18,
         borderWidth:2, 
-        borderColor: 'black'
-
+        borderColor: 'black',
+        ...shadow
+        
+    },
+    errorContainer: {
+        marginTop: 5, 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        borderRadius:3, 
+        borderColor: 'black',
+        ...shadow
+    },
+    errorContainer2: {
+        marginTop: 20,
+        borderWidth: 2,
+        padding: 5,
+        backgroundColor: 'rgba(230, 0, 0, 0.8)',
+        borderRadius: 3,
+        ...shadow
     }
 
 

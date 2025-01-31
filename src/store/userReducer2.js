@@ -4,6 +4,35 @@ import { API_URL } from "@env"
 
 
 
+const fullUpdate = createAsyncThunk(
+    'user/fullupdate',
+    async({username, longest, updated}, thunkAPI) => {
+        try{
+            const response = await fetch(`${API_URL}/fullupdate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body:  JSON.stringify({
+                    "username": username,
+                    "updatedCharacters": updated,
+                    "longestStreak": longest
+                })
+            });
+
+            console.log(response)
+            if (!response.ok){
+                console.log('H343')
+                throw new Error("Streak/Stats not Saved!");
+            }
+            const responseData = await response.json();
+            return responseData
+        }catch(error){
+            return thunkAPI.rejectWithValue(error.message)
+        }
+    }
+)
+
 const createUser = createAsyncThunk(
     'user/createuser',
     async(username, thunkAPI) => {
@@ -17,11 +46,10 @@ const createUser = createAsyncThunk(
                     "username": username
                 })
             });
-             
-            console.log(response);
 
             if (!response.ok){
-                throw new Error("User not Created, Try Again");
+                const responseData = await response.json();
+                throw new Error(responseData.error);
             }
             const responseData = await response.json();
             return responseData;
@@ -38,12 +66,12 @@ const getUserData = createAsyncThunk(
     'user/getUserData',
     async(username, thunkAPI) => {
         try{
-            console.log(API_URL)
             const response = await fetch(`${API_URL}/fetchuser?username=${encodeURIComponent(username)}`);
             if(!response.ok){
                 throw new Error("User Data Not Found");
             }
             const responseData = await response.json();
+            console.log(responseData)
             return responseData
 
 
@@ -67,12 +95,9 @@ const updateUser = createAsyncThunk(
                     "updatedCharacters": updated
                 })
             });
-            const body = JSON.stringify({
-                "updatedCharacters": updated
-            });
 
             if (!response.ok){
-                throw new Error("Connect to Internet to Update Accuracies");
+                throw new Error("Connect to Internet to Save Accuracies");
             }
             const responseData = await response.json();
             return responseData
@@ -86,7 +111,7 @@ const updateUserLS = createAsyncThunk(
     "user/updateUserLS", 
     async({username, longest}, thunkAPI) => {
         try{
-            
+            console.log("this is the longest", longest);
             const response = await fetch(`${API_URL}/updatestreak`, {
                 method: 'POST',
                 headers: {
@@ -136,6 +161,9 @@ const userReducer = createSlice({
     reducers: {
         incorrect: (state, action) => {
             const {wordObj} = action.payload;
+            if (state.currentStreak.length >= state.longestStreak.length){
+                state.longestStreak.length = state.currentStreak.length
+            }
             state.currentStreak = {
                 length: 0,
                 last: ""
@@ -179,18 +207,23 @@ const userReducer = createSlice({
                 state.updated.push(updatedObject);
             }
 
+            if (state.currentStreak.length >= state.longestStreak.length){
+                state.longestStreak.length = state.currentStreak.length
+            }
+
         },
         resetStatus: (state, action) => {
             state.status = 'idle'
+            state.error = null
         }
 
 
     },
     extraReducers: (builder) => {
         builder
-
             //CreateUser cases
             .addCase(createUser.pending, (state) => {
+                state.error = null
                 state.status = 'loading';
             
             })
@@ -209,12 +242,14 @@ const userReducer = createSlice({
 
             })
             .addCase(createUser.rejected, (state, action) => {
+                console.log(action.payload)
                 state.status = 'failed';
                 state.error = action.payload;
             })
             //GetUser CASES
             .addCase(getUserData.pending, (state) => {
                 state.status = 'loading';
+                state.error = null;
             })
             .addCase(getUserData.fulfilled, (state, action) => {
                 state.status = 'success';
@@ -233,18 +268,32 @@ const userReducer = createSlice({
                 state.error = action.payload;
                 state.status = 'failed';
             })
-            //UpdateUser Cases
+            //Update User Cases
             .addCase(updateUser.fulfilled, (state,action) => {
                 state.updated = [];
             })
             .addCase(updateUser.rejected, (state, action) => {
                 state.error = action.payload;
+                state.status = 'failed'
             })
             .addCase(updateUserLS.rejected, (state,action) => {
-               state.error = action.payload
+               state.error = action.payload;
+               state.status = 'failed'
             })
-    } 
-
+            .addCase(fullUpdate.pending, (state, action) => {
+                state.status = 'loading';
+            })
+            .addCase(fullUpdate.rejected, (state, action) => {
+                state.error = action.payload;
+                state.status = 'failed';
+            })
+            .addCase(fullUpdate.fulfilled, (state, action) => {
+                console.
+                state.error = null;
+                state.status = 'success';
+                state.updated = [];
+            })
+    }
 })
 
 
@@ -255,3 +304,4 @@ export const getUserDataThunk = getUserData;
 export const updateUserThunk = updateUser;
 export const updateUserLSThunk = updateUserLS;
 export const createUserThunk = createUser; 
+export const fullUpdateThunk = fullUpdate;

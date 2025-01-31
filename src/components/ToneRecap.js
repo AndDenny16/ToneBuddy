@@ -8,10 +8,10 @@ const ToneRecap = ({ character, tone, percent, pinyin, attempts, trad }) => {
             {character === trad ? <Text style = {style.character}> {character}</Text>
             : <Text style = {style.character}> {character} / {trad} </Text>    
         }
-            <View >
+            <View>
                 <Text style = {[style.tonePercent, {fontWeight: 'bold', fontSize: 25 }]}>{pinyin}</Text>
                 <Text style = {style.tonePercent}>Accuracy: {Math.round(percent * 100)}%</Text>
-                <Text style = {style.tonePercent}>Attempts: {attempts}</Text>
+                <Text style = {style.tonePercent}>Attempts: {attempts > 100000000 ? '\u221E (wow)': attempts }</Text>
             </View>
         </View>
     )
@@ -32,7 +32,7 @@ const style = StyleSheet.create ({
         alignItems: 'center',
         backgroundColor:'white',
         shadowColor: '#000', // Shadow color
-        shadowOffset: { width: 0.5, height: 0.5 }, // Vertical shadow for depth
+        shadowOffset: { width: 0.2, height: 0.2 }, // Vertical shadow for depth
         shadowOpacity: 0.2, // Transparency of shadow
         shadowRadius: 10, // Soft blur radius
         elevation: 10, 
@@ -47,7 +47,7 @@ const style = StyleSheet.create ({
         fontSize: 15,
         marginLeft: 20
 
-    }
+    },
 
 
 
