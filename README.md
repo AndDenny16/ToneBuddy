@@ -4,6 +4,8 @@
 ---
 
 ![Project Logo](/assets/media/logolfinal2.png)
+<img src="assets/media/logofinal2.png" alt="Project Logo" width="200">
+
 
 ## **Motivation**
 As a Computer Science major with a minor in Chinese Studies, I wanted to combine these two fields into a meaningful project. Mandarin Chinese, a tonal language, has **4 tones**, and the meaning of each word depends on using the correct tone.
