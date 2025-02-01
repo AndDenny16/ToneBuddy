@@ -3,6 +3,8 @@
 
 ---
 
+![Project Logo](/assets/media/logolfinal2.png)
+
 ## **Motivation**
 As a Computer Science major with a minor in Chinese Studies, I wanted to combine these two fields into a meaningful project. Mandarin Chinese, a tonal language, has **4 tones**, and the meaning of each word depends on using the correct tone.
 
@@ -80,4 +82,6 @@ This repository contains the **frontend** implementation of the Tone Buddy app t
 - **Interactive UI:** A user-friendly design powered by React Native.  
 - **State Management:** Redux-powered architecture for robust state handling.  
 - **Serverless Backend Integration:** Seamless communication with the AWS backend for data retrieval and model predictions.
+
+
 
