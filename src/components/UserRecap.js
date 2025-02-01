@@ -1,13 +1,11 @@
 import { Text, View, StyleSheet, Image } from 'react-native';
 import { useSelector } from 'react-redux';
-import React, {useEffect, useState, useMemo, useRef} from "react";
+import React, { useMemo} from "react";
 import Icon from 'react-native-vector-icons/FontAwesome5'
 
 
 
 const UserRecap = () => {
-
-    const [attempted, setAttempted] = useState(false);
     const {username, currentStreak, accuracyArray: accuracies, longestStreak } = useSelector((state) => state.user);
 
     const mostMissed = useMemo(() => {

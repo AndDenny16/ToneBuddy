@@ -50,21 +50,3 @@ export const recordingSettings = {
       linearPCMIsFloat: false,
     },
   };
-
-
-  ///UPDATE TO AWS = ACCURACIES EVERY 20 WORDS, Updated Words is persisted, so if user exists before 20 its handled
-    ////BIG PROBLEM WITH THIS SHIIIIT - will consider fixing this later
-  export const updatetoAWS = async(updated) => {
-      if (updated.length >= 20){
-          console.log("inside here");
-          try{
-             console.log('Updating to AWS')
-             dispatch(updateUserThunk({username, updated}))
-             console.log('Successful Update to AWS')
-
-          }catch(error){
-              console.error("AWS update failed:", error);
-          }
-          
-      }
-  }

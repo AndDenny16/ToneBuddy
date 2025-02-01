@@ -1,4 +1,4 @@
-import React, {useEffect, useState, useMemo, useRef} from "react";
+import React, {useState, useMemo, useRef} from "react";
 import { StyleSheet, View, Text, TouchableOpacity, Dimensions, ActivityIndicator } from "react-native";
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import { useNavigation } from '@react-navigation/native';
@@ -7,9 +7,9 @@ import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withDelay, withSpr
 import { useSelector, useDispatch } from "react-redux";
 import diacriticless from "diacriticless";
 import { Audio } from "expo-av";
-import { incorrect, correct, updateUserThunk, updateError, updateUserLSThunk } from "../store/userReducer2";
+import {  updateUserThunk } from "../store/userReducer2";
 import { getToneThunk, resetToneStatus } from "../store/toneReducer";
-import { encodeAudio,recordingSettings, deleteURI, updatetoAWS  } from "./AudioRecorder";
+import { encodeAudio,recordingSettings, deleteURI} from "./AudioRecorder";
 
 
 

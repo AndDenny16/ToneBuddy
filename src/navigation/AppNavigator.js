@@ -2,7 +2,6 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
 import HomeScreen from '../screens/HomeScreen';
-import LeaderBoard from '../screens/LeaderBoard';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons'
 import StreakScreen from '../screens/StreakScreen';
 import { createStackNavigator } from '@react-navigation/stack';
