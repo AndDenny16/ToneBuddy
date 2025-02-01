@@ -44,7 +44,7 @@ This repository is **Step 4** of the overall project: developing a **React Nativ
 ---
 
 ## **About This Repository**
-This repository contains the **frontend** implementation of the Tone Buddy app. Below is an overview of its structure:
+This repository contains the **frontend** implementation of the Tone Buddy app that interacts with AWS Backend through API Gateway. Below is an overview of its structure:
 
 ### **Directory Structure**
 - **`src/screens`**  
@@ -54,6 +54,8 @@ This repository contains the **frontend** implementation of the Tone Buddy app. 
   Includes Redux reducers for managing application state and async thunks for handling API calls.
   - **toneReducer.js** handles async calls and state managment for the tone detection
   - **userReducer.js** handles async calls and state managment for user streak / username / and accuracies
+  - **imageReducer.js** fetches images from s3 bucket through presigned url
+  - Al store reducers handle API Gateway calls
 
 - **`src/navigation`**  
   Implements the app's navigation, including:
