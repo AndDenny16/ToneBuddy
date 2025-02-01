@@ -3,8 +3,7 @@
 
 ---
 
-![Project Logo](/assets/media/logolfinal2.png)
-<img src="/assets/media/logofinal2.png" alt="Project Logo" width="200">
+<img src="/assets/media/logolfinal2.png" alt="Project Logo" width="150">
 
 
 ## **Motivation**
@@ -84,6 +83,13 @@ This repository contains the **frontend** implementation of the Tone Buddy app t
 - **Interactive UI:** A user-friendly design powered by React Native.  
 - **State Management:** Redux-powered architecture for robust state handling.  
 - **Serverless Backend Integration:** Seamless communication with the AWS backend for data retrieval and model predictions.
+
+## **Images & Demo**
+<p align="center">
+  <img src="/HomeScreen.PNG" width="200">
+  <img src="/StreakScreen.PNG" width="200">
+  <img src="/HelpScreen.PNG" width="200">
+</p>
 
 
 
