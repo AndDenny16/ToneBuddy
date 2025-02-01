@@ -62,8 +62,11 @@ This repository contains the **frontend** implementation of the Tone Buddy app. 
 
 - **`src/components`**  
   Houses reusable UI components like:
-  - **Vocab Cards**
-  - **Headers**
+  - **VocabCard**
+      - Swipable using ``react-native-reanimated``
+      - Recording using ``expo-av``
+  - **Header**
+  - **UserRecap** - display user's stats across characters
 
 - **`assests/media`**  
   Stores images and other static assets used in the project.
@@ -75,13 +78,4 @@ This repository contains the **frontend** implementation of the Tone Buddy app. 
 - **Interactive UI:** A user-friendly design powered by React Native.  
 - **State Management:** Redux-powered architecture for robust state handling.  
 - **Serverless Backend Integration:** Seamless communication with the AWS backend for data retrieval and model predictions.
-
----
-
-## **Next Steps**
-- Add gamification elements to enhance user engagement.
-- Expand tone analysis to full sentences.
-- Implement analytics to track user progress over time.
-
----
 
