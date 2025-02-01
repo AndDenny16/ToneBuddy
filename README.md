@@ -4,7 +4,7 @@
 ---
 
 ![Project Logo](/assets/media/logolfinal2.png)
-<img src="assets/media/logofinal2.png" alt="Project Logo" width="200">
+<img src="/assets/media/logofinal2.png" alt="Project Logo" width="200">
 
 
 ## **Motivation**
