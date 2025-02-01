@@ -47,25 +47,25 @@ This repository is **Step 4** of the overall project: developing a **React Nativ
 This repository contains the **frontend** implementation of the Tone Buddy app. Below is an overview of its structure:
 
 ### **Directory Structure**
-- **`/screens`**  
+- **`src/screens`**  
   Contains the primary user interface (UI) screens for the app.
 
-- **`/store`**  
+- **`src/store`**  
   Includes Redux reducers for managing application state and async thunks for handling API calls.
   - **toneReducer.js** handles async calls and state managment for the tone detection
   - **userReducer.js** handles async calls and state managment for user streak / username / and accuracies
 
-- **`/navigation`**  
+- **`src/navigation`**  
   Implements the app's navigation, including:
   - **Bottom Tab Navigator** (for main app sections)
   - **Stack Navigator** (for managing screen transitions).
 
-- **`/components`**  
+- **`src/components`**  
   Houses reusable UI components like:
   - **Vocab Cards**
   - **Headers**
 
-- **`/media`**  
+- **`assests/media`**  
   Stores images and other static assets used in the project.
 
 ---
