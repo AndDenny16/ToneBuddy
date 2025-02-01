@@ -52,6 +52,8 @@ This repository contains the **frontend** implementation of the Tone Buddy app. 
 
 - **`/store`**  
   Includes Redux reducers for managing application state and async thunks for handling API calls.
+  - **toneReducer.js** handles async calls and state managment for the tone detection
+  - **userReducer.js** handles async calls and state managment for user streak / username / and accuracies
 
 - **`/navigation`**  
   Implements the app's navigation, including:
