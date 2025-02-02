@@ -86,10 +86,13 @@ This repository contains the **frontend** implementation of the Tone Buddy app t
 
 ## **Images & Demo**
 <p align="center">
-  <img src="/HomeScreen.PNG" width="200">
-  <img src="/StreakScreen.PNG" width="200">
-  <img src="/HelpScreen.PNG" width="200">
+  <img src="/Demos/HomeScreen.PNG" width="200">
+  <img src="/Demos/StreakScreen.PNG" width="200">
+  <img src="/Demos/HelpScreen.PNG" width="200">
 </p>
+
+
+## [Watch the Demo Video](/Demos/ToneBuddyDemo.mp4)
 
 
 
