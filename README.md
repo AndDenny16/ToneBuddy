@@ -27,7 +27,7 @@ This repository is **Step 4** of the overall project: developing a **React Nativ
   - **Python**
 - The model predicts the tone of a given word based on its audio spectrogram.
 
-### **Step 2: Dockerized ML Model**
+### **[Step 2: Dockerized ML Model](https://github.com/AndDenny16/Tone-Identifier-Container)**
 - Deployed the pretrained ML model in a custom **Docker container**.
 - The container performs the following:
   1. Accepts user audio input.
