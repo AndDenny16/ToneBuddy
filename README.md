@@ -20,7 +20,7 @@ Messing up a tone can completely change the meaning of a sentence. This is a com
 ## **Project Breakdown**
 This repository is **Step 4** of the overall project: developing a **React Native frontend** for the app. Below is an overview of the full project workflow:
 
-### **Step 1: Tone Classification Model**
+### **[Step 1: Tone Classification Model](https://github.com/AndDenny16/TF-ChineseTone-Classification)**
 - Trained a **Deep Convolutional Neural Network (CNN)** on spectrograms of native Mandarin speakers using:
   - **TensorFlow**
   - **Librosa** (for audio preprocessing)
